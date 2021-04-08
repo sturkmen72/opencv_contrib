@@ -45,9 +45,9 @@
 #include <opencv2/core/core_c.h>
 #include <opencv2/core/private.hpp>
 #include <opencv2/imgproc.hpp>
-
+#include "opencv2/core/hal/intrin.hpp"
 #include <opencv2/ximgproc.hpp>
-
+#include <opencv2/imgcodecs.hpp>
 #include <algorithm>
 #include <map>
 

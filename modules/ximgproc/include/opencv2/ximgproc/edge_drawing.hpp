@@ -96,6 +96,15 @@ public:
 
     CV_WRAP Params params;
 
+    double tComputeGradient;
+    double tComputeGradientBody;
+    double tComputeAnchorPoints;
+    double tJoinAnchorPointsUsingSortedAnchors;
+    double tdetectEdges;
+    double tdetectLines;
+    double tdetectEllipses;
+
+    CV_WRAP void showTimes();
     /** @brief sets parameters.
 
     this function is meant to be used for parameter setting in other languages than c++.

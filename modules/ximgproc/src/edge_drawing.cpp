@@ -6,11 +6,187 @@
 #include "edge_drawing_common.hpp"
 
 using namespace std;
+typedef short deriv_type;
 
 namespace cv
 {
 namespace ximgproc
 {
+
+
+    struct ScharrDerivInvoker : ParallelLoopBody
+    {
+        ScharrDerivInvoker(const Mat& _src, const Mat& _dst)
+            : src(_src), dst(_dst)
+        { }
+
+        void operator()(const Range& range) const CV_OVERRIDE;
+
+        const Mat& src;
+        const Mat& dst;
+    };
+
+    void ScharrDerivInvoker::operator()(const Range& range) const
+    {
+    int rows = src.rows, cols = src.cols, cn = src.channels(), colsn = cols*cn;
+
+    int x, y, delta = (int)alignSize((cols + 2)*cn, 16);
+    AutoBuffer<deriv_type> _tempBuf(delta*2 + 64);
+    deriv_type *trow0 = alignPtr(_tempBuf.data() + cn, 16), *trow1 = alignPtr(trow0 + delta, 16);
+
+#if CV_SIMD128
+    v_int16x8 c3 = v_setall_s16(3), c10 = v_setall_s16(10);
+#endif
+
+    for( y = range.start; y < range.end; y++ )
+    {
+        const uchar* srow0 = src.ptr<uchar>(y > 0 ? y-1 : rows > 1 ? 1 : 0);
+        const uchar* srow1 = src.ptr<uchar>(y);
+        const uchar* srow2 = src.ptr<uchar>(y < rows-1 ? y+1 : rows > 1 ? rows-2 : 0);
+        deriv_type* drow = (deriv_type *)dst.ptr<deriv_type>(y);
+
+        // do vertical convolution
+        x = 0;
+#if CV_SIMD128
+        {
+            for( ; x <= colsn - 8; x += 8 )
+            {
+                v_int16x8 s0 = v_reinterpret_as_s16(v_load_expand(srow0 + x));
+                v_int16x8 s1 = v_reinterpret_as_s16(v_load_expand(srow1 + x));
+                v_int16x8 s2 = v_reinterpret_as_s16(v_load_expand(srow2 + x));
+
+                v_int16x8 t1 = s2 - s0;
+                v_int16x8 t0 = v_mul_wrap(s0 + s2, c3) + v_mul_wrap(s1, c10);
+
+                v_store(trow0 + x, t0);
+                v_store(trow1 + x, t1);
+            }
+        }
+#endif
+
+        for( ; x < colsn; x++ )
+        {
+            int t0 = (srow0[x] + srow2[x])*3 + srow1[x]*10;
+            int t1 = srow2[x] - srow0[x];
+            trow0[x] = (deriv_type)t0;
+            trow1[x] = (deriv_type)t1;
+        }
+
+        // make border
+        int x0 = (cols > 1 ? 1 : 0)*cn, x1 = (cols > 1 ? cols-2 : 0)*cn;
+        for( int k = 0; k < cn; k++ )
+        {
+            trow0[-cn + k] = trow0[x0 + k]; trow0[colsn + k] = trow0[x1 + k];
+            trow1[-cn + k] = trow1[x0 + k]; trow1[colsn + k] = trow1[x1 + k];
+        }
+
+        // do horizontal convolution, interleave the results and store them to dst
+        x = 0;
+#if CV_SIMD128
+        {
+            for( ; x <= colsn - 8; x += 8 )
+            {
+                v_int16x8 s0 = v_load(trow0 + x - cn);
+                v_int16x8 s1 = v_load(trow0 + x + cn);
+                v_int16x8 s2 = v_load(trow1 + x - cn);
+                v_int16x8 s3 = v_load(trow1 + x);
+                v_int16x8 s4 = v_load(trow1 + x + cn);
+
+                v_int16x8 t0 = s1 - s0;
+                v_int16x8 t1 = v_mul_wrap(s2 + s4, c3) + v_mul_wrap(s3, c10);
+
+                v_store_interleave((drow + x*2), t0, t1);
+            }
+        }
+#endif
+        for( ; x < colsn; x++ )
+        {
+            deriv_type t0 = (deriv_type)(trow0[x+cn] - trow0[x-cn]);
+            deriv_type t1 = (deriv_type)((trow1[x+cn] + trow1[x-cn])*3 + trow1[x]*10);
+            drow[x*2] = t0; drow[x*2+1] = t1;
+        }
+    }
+}
+
+struct ComputeGradientBody : ParallelLoopBody
+{
+void operator() (const Range& range) const CV_OVERRIDE;
+
+Mat_<uchar> src;
+mutable Mat_<short> gradImage;
+mutable Mat_<uchar> dirImage;
+int gradThresh;
+int op;
+bool SumFlag;
+int* grads;
+};
+
+void ComputeGradientBody::operator() (const Range& range) const
+{
+    const int last_col = src.cols - 1;
+
+    for (int y = range.start; y < range.end; ++y)
+    {
+        const uchar* srcPrevRow = src[y - 1];
+        const uchar* srcCurRow = src[y];
+        const uchar* srcNextRow = src[y + 1];
+
+        short* gradRow = gradImage[y];
+        uchar* dirRow = dirImage[y];
+
+        for (int x = 1; x < last_col; ++x)
+        {
+            int com1 = srcNextRow[x + 1] - srcPrevRow[x - 1];
+            int com2 = srcPrevRow[x + 1] - srcNextRow[x - 1];
+            int gx = 0;
+            int gy = 0;
+
+            switch (op)
+            {
+            case EdgeDrawing::PREWITT:
+                gx = abs(com1 + com2 + srcCurRow[x + 1] - srcCurRow[x - 1]);
+                gy = abs(com1 - com2 + srcNextRow[x] - srcPrevRow[x]);
+                break;
+            case EdgeDrawing::SOBEL:
+                gx = abs(com1 + com2 + 2 * (srcCurRow[x + 1] - srcCurRow[x - 1]));
+                gy = abs(com1 - com2 + 2 * (srcNextRow[x] - srcPrevRow[x]));
+                break;
+            case EdgeDrawing::SCHARR:
+                gx = abs(3 * (com1 + com2) + 10 * (srcCurRow[x + 1] - srcCurRow[x - 1]));
+                gy = abs(3 * (com1 - com2) + 10 * (srcNextRow[x] - srcPrevRow[x]));
+                break;
+            case EdgeDrawing::LSD:
+                // com1 and com2 differs from previous operators, because LSD has 2x2 kernel
+                com1 = srcNextRow[x + 1] - srcCurRow[x];
+                com2 = srcCurRow[x + 1] - srcNextRow[x];
+
+                gx = abs(com1 + com2);
+                gy = abs(com1 - com2);
+                break;
+            }
+
+            int sum;
+
+            if (SumFlag)
+                sum = gx + gy;
+            else
+                sum = (int)sqrt((double)gx * gx + gy * gy);
+
+            gradRow[x] = (short)sum;
+
+            if (op == EdgeDrawing::PREWITT)
+                grads[(int)sum]++;
+
+            if (sum >= gradThresh)
+            {
+                if (gx >= gy)
+                    dirRow[x] = EDGE_VERTICAL;
+                else
+                    dirRow[x] = EDGE_HORIZONTAL;
+            }
+        }
+    }
+}
 
 class EdgeDrawingImpl : public EdgeDrawing
 {
@@ -47,6 +223,7 @@ protected:
 
     double divForTestSegment;
     double* dH;
+    int* grads;
     int np;
 
 private:
@@ -64,7 +241,7 @@ private:
 
     Mat edgeImage;
     Mat gradImage;
-
+    Mat _dirImg;
     uchar *dirImg;    // pointer to direction image data
     short *gradImg;   // pointer to gradient image data
 
@@ -237,6 +414,17 @@ void EdgeDrawing::Params::write(cv::FileStorage& fs) const
     fs << "MaxErrorThreshold" << MaxErrorThreshold;
 }
 
+void EdgeDrawing::showTimes()
+{
+    printf("\nComputeGradient() time             : %f", tComputeGradient);
+    printf("\nComputeGradientBody time           : %f", tComputeGradientBody);
+    printf("\nComputeAnchorPoints() time         : %f", tComputeAnchorPoints);
+    printf("\nJoinAnchorPointsUsingSortedAn time : %f", tJoinAnchorPointsUsingSortedAnchors);
+    printf("\ndetectEdges()                      : %f", tdetectEdges);
+    printf("\ndetectLines()                      : %f", tdetectLines);
+    printf("\ndetectEllipses()                   : %f\n", tdetectEllipses);
+}
+
 void EdgeDrawingImpl::read(const cv::FileNode& fn)
 {
     params.read(fn);
@@ -251,10 +439,22 @@ void EdgeDrawingImpl::write(cv::FileStorage& fs) const
 EdgeDrawingImpl::EdgeDrawingImpl()
 {
     params = EdgeDrawing::Params();
+    tComputeGradient = 0;
+    tComputeGradientBody = 0;
+    tComputeAnchorPoints = 0;
+    tJoinAnchorPointsUsingSortedAnchors = 0;
+    tdetectEdges = 0;
+    tdetectLines = 0;
+    tdetectEllipses = 0;
+
+    dH = new double[MAX_GRAD_VALUE];
+    grads = new int[MAX_GRAD_VALUE];
 }
 
 void EdgeDrawingImpl::detectEdges(InputArray src)
 {
+    TickMeter tm0;
+    tm0.start();
     gradThresh = params.GradientThresholdValue;
     anchorThresh = params.AnchorThresholdValue;
     op = params.EdgeDetectionOperator;
@@ -290,6 +490,7 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
 
     edgeImage = Mat(height, width, CV_8UC1, Scalar(0)); // initialize edge Image
     gradImage = Mat(height, width, CV_16SC1); // gradImage contains short values
+    _dirImg = Mat(height, width, CV_8UC1);
 
     if (params.Sigma < 1.0)
         smoothImage = srcImage;
@@ -302,16 +503,77 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
     smoothImg = smoothImage.data;
     gradImg = (short*)gradImage.data;
     edgeImg = edgeImage.data;
-
-    Mat _dirImg = Mat(height, width, CV_8UC1);
     dirImg = _dirImg.data;
 
-    ComputeGradient();                    // COMPUTE GRADIENT & EDGE DIRECTION MAPS
+    TickMeter tm;
+
+    tm.reset();
+    tm.start();
+    memset(dH, 0, sizeof(double) * MAX_GRAD_VALUE);
+    memset(grads, 0, sizeof(int) * MAX_GRAD_VALUE);
+    // Initialize gradient image for row = 0, row = height-1, column=0, column=width-1
+    for (int j = 0; j < width; j++)
+    {
+        gradImg[j] = gradImg[(height - 1) * width + j] = (short)gradThresh - 1;
+    }
+
+    for (int i = 1; i < height - 1; i++)
+    {
+        gradImg[i * width] = gradImg[(i + 1) * width - 1] = (short)gradThresh - 1;
+    }
+    ComputeGradientBody body;
+    body.src = smoothImage;
+    body.gradImage = gradImage;
+    body.dirImage = _dirImg;
+    body.gradThresh = gradThresh;
+    body.SumFlag = params.SumFlag;
+    body.op = op;
+    body.grads = grads;
+
+    parallel_for_(Range(1, smoothImage.rows - 1), body);
+    tm.stop();
+    tComputeGradientBody = tm.getTimeMilli();
+
+    tm.reset();
+    tm.start();
     ComputeAnchorPoints();                // COMPUTE ANCHORS
+    tm.stop();
+    tComputeAnchorPoints = tm.getTimeMilli();
+
+    //imwrite("dedgeImage0.png", edgeImage);
+    tm.reset();
+    tm.start();
     JoinAnchorPointsUsingSortedAnchors(); // JOIN ANCHORS
+    tm.stop();
+    tJoinAnchorPointsUsingSortedAnchors = tm.getTimeMilli();
+
+    tm.reset();
+    tm.start();
+    Mat dst;
+
+    int rows = srcImage.rows, cols = srcImage.cols, cn = srcImage.channels();
+    dst.create(rows, cols, CV_MAKETYPE(DataType<deriv_type>::depth, cn * 2));
+    tm.start();
+    parallel_for_(Range(0, rows), ScharrDerivInvoker(srcImage, dst), cv::getNumThreads());
+    tm.stop();
+    tComputeGradient = tm.getTimeMilli();
+
+    /*vector<Mat> planes;
+    split(dst, planes);
+    imwrite("ScharrDerivInvoker0.png", planes[0]);
+    imwrite("ScharrDerivInvoker1.png", planes[1]);*/
 
     if (params.PFmode)
     {
+        // Compute probability function H
+        int size = (width - 2) * (height - 2);
+
+        for (int i = MAX_GRAD_VALUE - 1; i > 0; i--)
+            grads[i - 1] += grads[i];
+
+        for (int i = 0; i < MAX_GRAD_VALUE; i++)
+            dH[i] = (double)grads[i] / ((double)size);
+
         divForTestSegment = 2.25; // Some magic number :-)
         memset(edgeImg, 0, width * height); // clear edge image
         np = 0;
@@ -327,6 +589,12 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
 
         ExtractNewSegments();
     }
+    tm0.stop();
+    tdetectEdges = tm0.getTimeMilli();
+
+
+    //imwrite("gradImage_.png", gradImage);
+    //imwrite("_dirImg_.png", _dirImg);
 }
 
 void EdgeDrawingImpl::getEdgeImage(OutputArray _dst)
@@ -342,7 +610,6 @@ void EdgeDrawingImpl::getGradientImage(OutputArray _dst)
         convertScaleAbs(gradImage, _dst);
 }
 
-
 std::vector<std::vector<Point> > EdgeDrawingImpl::getSegments()
 {
     return segmentPoints;
@@ -350,90 +617,6 @@ std::vector<std::vector<Point> > EdgeDrawingImpl::getSegments()
 
 void EdgeDrawingImpl::ComputeGradient()
 {
-#define MAX_GRAD_VALUE 128*256
-    dH = new double[MAX_GRAD_VALUE];
-    memset(dH, 0, sizeof(double) * MAX_GRAD_VALUE);
-
-    int* grads = new int[MAX_GRAD_VALUE];
-    memset(grads, 0, sizeof(int) * MAX_GRAD_VALUE);
-
-    // Initialize gradient image for row = 0, row = height-1, column=0, column=width-1
-    for (int j = 0; j < width; j++)
-    {
-        gradImg[j] = gradImg[(height - 1) * width + j] = (short)gradThresh - 1;
-    }
-
-    for (int i = 1; i < height - 1; i++)
-    {
-        gradImg[i * width] = gradImg[(i + 1) * width - 1] = (short)gradThresh - 1;
-    }
-
-    for (int i = 1; i < height - 1; i++)
-    {
-        for (int j = 1; j < width - 1; j++)
-        {
-            int com1 = smoothImg[(i + 1) * width + j + 1] - smoothImg[(i - 1) * width + j - 1];
-            int com2 = smoothImg[(i - 1) * width + j + 1] - smoothImg[(i + 1) * width + j - 1];
-
-            int gx(0);
-            int gy(0);
-
-            switch (op)
-            {
-            case PREWITT:
-                gx = abs(com1 + com2 + (smoothImg[i * width + j + 1] - smoothImg[i * width + j - 1]));
-                gy = abs(com1 - com2 + (smoothImg[(i + 1) * width + j] - smoothImg[(i - 1) * width + j]));
-                break;
-            case SOBEL:
-                gx = abs(com1 + com2 + 2 * (smoothImg[i * width + j + 1] - smoothImg[i * width + j - 1]));
-                gy = abs(com1 - com2 + 2 * (smoothImg[(i + 1) * width + j] - smoothImg[(i - 1) * width + j]));
-                break;
-            case SCHARR:
-                gx = abs(3 * (com1 + com2) + 10 * (smoothImg[i * width + j + 1] - smoothImg[i * width + j - 1]));
-                gy = abs(3 * (com1 - com2) + 10 * (smoothImg[(i + 1) * width + j] - smoothImg[(i - 1) * width + j]));
-                break;
-            case LSD:
-                // com1 and com2 differs from previous operators, because LSD has 2x2 kernel
-                com1 = smoothImg[(i + 1) * width + j + 1] - smoothImg[i * width + j];
-                com2 = smoothImg[i * width + j + 1] - smoothImg[(i + 1) * width + j];
-
-                gx = abs(com1 + com2);
-                gy = abs(com1 - com2);
-                break;
-            }
-
-            int sum;
-
-            if (params.SumFlag)
-                sum = gx + gy;
-            else
-                sum = (int)sqrt((double)gx * gx + gy * gy);
-
-            int index = i * width + j;
-            gradImg[index] = (short)sum;
-
-            grads[(int)sum]++;
-
-            if (sum >= gradThresh)
-            {
-                if (gx >= gy)
-                    dirImg[index] = EDGE_VERTICAL;
-                else
-                    dirImg[index] = EDGE_HORIZONTAL;
-            }
-        }
-    }
-
-    // Compute probability function H
-    int size = (width - 2) * (height - 2);
-
-    for (int i = MAX_GRAD_VALUE - 1; i > 0; i--)
-        grads[i - 1] += grads[i];
-
-    for (int i = 0; i < MAX_GRAD_VALUE; i++)
-        dH[i] = (double)grads[i] / ((double)size);
-
-#undef MAX_GRAD_VALUE
 }
 
 void EdgeDrawingImpl::ComputeAnchorPoints()
@@ -526,7 +709,6 @@ void EdgeDrawingImpl::JoinAnchorPointsUsingSortedAnchors()
             stack[top].c = j;
             stack[top].dir = UP;
             stack[top].parent = 0;
-
         }
         else
         {
@@ -1239,7 +1421,8 @@ void EdgeDrawingImpl::detectLines(OutputArray _lines)
 {
     if (segmentPoints.size() < 1)
         return;
-
+    TickMeter tm0;
+    tm0.start();
     min_line_len = params.MinLineLength;
     line_error = params.LineFitErrorThreshold;
     max_distance_between_two_lines = params.MaxDistanceBetweenTwoLines;
@@ -1299,6 +1482,8 @@ void EdgeDrawingImpl::detectLines(OutputArray _lines)
     delete[] x;
     delete[] y;
     Mat(linePoints).copyTo(_lines);
+    tm0.stop();
+    tdetectLines = tm0.getTimeMilli();
 }
 
 // Computes the minimum line length using the NFA formula given width & height values
@@ -2481,6 +2666,8 @@ void EdgeDrawingImpl::detectEllipses(OutputArray ellipses)
     if (segmentPoints.size() < 1)
         return;
 
+    TickMeter tm0;
+    tm0.start();
     vector<Vec6d> _ellipses;
 	Circles.clear();
 	Ellipses.clear();
@@ -2715,6 +2902,9 @@ void EdgeDrawingImpl::detectEllipses(OutputArray ellipses)
     delete bm;
     delete[] segmentStartLines;
     delete[] info;
+
+    tm0.stop();
+    tdetectEllipses = tm0.getTimeMilli();
 }
 
 void EdgeDrawingImpl::GenerateCandidateCircles()
@@ -2787,7 +2977,6 @@ void EdgeDrawingImpl::GenerateCandidateCircles()
 
 void EdgeDrawingImpl::DetectArcs()
 {
-
     double maxLineLengthThreshold = MAX(width, height) / 5;
 
     double MIN_ANGLE = CV_PI / 30;  // 6 degrees
