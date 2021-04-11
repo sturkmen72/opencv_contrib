@@ -3356,9 +3356,6 @@ void EdgeDrawingImpl::ValidateCircles(bool validate)
     double* px = new double[8 * (width + height)];
     double* py = new double[8 * (width + height)];
 
-    int lutSize = (width + height) / 8;
-    nfa = new NFALUT(lutSize, prob, width, height); // create look up table
-
     // Validate circles & ellipses
     bool validateAgain;
     int count = 0;
