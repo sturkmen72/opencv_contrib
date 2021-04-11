@@ -65,7 +65,7 @@ private:
 
 NFALUT::NFALUT(int size, double _prob, int _w, int _h)
 {
-    LUTSize = size > 50 ? 50 : size;
+    LUTSize = size > 5 ? 5 : size;
     LUT = new int[LUTSize];
     w = _w;
     h = _h;
