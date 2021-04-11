@@ -416,7 +416,7 @@ void EdgeDrawing::Params::write(cv::FileStorage& fs) const
 
 void EdgeDrawing::showTimes()
 {
-    printf("\nComputeGradient() time             : %f", tComputeGradient);
+    printf("\nTest() time                        : %f", tTest);
     printf("\nComputeGradientBody time           : %f", tComputeGradientBody);
     printf("\nComputeAnchorPoints() time         : %f", tComputeAnchorPoints);
     printf("\nJoinAnchorPointsUsingSortedAn time : %f", tJoinAnchorPointsUsingSortedAnchors);
@@ -439,7 +439,7 @@ void EdgeDrawingImpl::write(cv::FileStorage& fs) const
 EdgeDrawingImpl::EdgeDrawingImpl()
 {
     params = EdgeDrawing::Params();
-    tComputeGradient = 0;
+    tTest = 0;
     tComputeGradientBody = 0;
     tComputeAnchorPoints = 0;
     tJoinAnchorPointsUsingSortedAnchors = 0;
@@ -556,7 +556,7 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
     tm.start();
     parallel_for_(Range(0, rows), ScharrDerivInvoker(srcImage, dst), cv::getNumThreads());
     tm.stop();
-    tComputeGradient = tm.getTimeMilli();
+    tTest = tm.getTimeMilli();
 
     /*vector<Mat> planes;
     split(dst, planes);

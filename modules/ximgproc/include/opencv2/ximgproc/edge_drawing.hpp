@@ -96,7 +96,7 @@ public:
 
     CV_WRAP Params params;
 
-    double tComputeGradient;
+    double tTest;
     double tComputeGradientBody;
     double tComputeAnchorPoints;
     double tJoinAnchorPointsUsingSortedAnchors;
