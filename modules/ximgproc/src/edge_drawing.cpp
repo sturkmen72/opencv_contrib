@@ -3344,7 +3344,6 @@ void EdgeDrawingImpl::DetectArcs()
 void EdgeDrawingImpl::ValidateCircles(bool validate)
 {
     precision = CV_PI / 16;  // Alignment precision
-    double prob = 1.0 / 8;  // probability of alignment
 
     double max = width;
     if (height > max)
