@@ -34,6 +34,9 @@
  *  the use of this software, even if advised of the possibility of such damage.
  */
 
+#include <opencv2/opencv_modules.hpp>
+#ifdef HAVE_OPENCV_CALIB3D
+
 #include "precomp.hpp"
 #include "opencv2/ximgproc/disparity_filter.hpp"
 #include "opencv2/imgcodecs.hpp"
@@ -569,3 +572,4 @@ void getDisparityVis(InputArray src,OutputArray dst,double scale)
 
 }
 }
+#endif

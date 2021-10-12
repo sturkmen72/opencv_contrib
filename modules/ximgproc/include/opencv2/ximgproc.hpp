@@ -38,7 +38,6 @@
 #define __OPENCV_XIMGPROC_HPP__
 
 #include "ximgproc/edge_filter.hpp"
-#include "ximgproc/disparity_filter.hpp"
 #include "ximgproc/sparse_match_interpolator.hpp"
 #include "ximgproc/structured_edge_detection.hpp"
 #include "ximgproc/edgeboxes.hpp"
@@ -58,6 +57,9 @@
 #include "ximgproc/ridgefilter.hpp"
 #include "ximgproc/brightedges.hpp"
 
+#ifdef HAVE_OPENCV_CALIB3D
+#include "ximgproc/disparity_filter.hpp"
+#endif
 
 /** @defgroup ximgproc Extended Image Processing
   @{
