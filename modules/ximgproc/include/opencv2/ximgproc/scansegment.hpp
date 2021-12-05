@@ -11,6 +11,9 @@
 
 namespace cv { namespace ximgproc {
 
+//! @addtogroup ximgproc_superpixel
+//! @{
+
 /** @brief Class implementing the F-DBSCAN (Accelerated superpixel image segmentation with a parallelized DBSCAN algorithm) superpixels
 algorithm by Loke SC, et al. @cite loke2021accelerated for original paper.
 
@@ -79,5 +82,6 @@ much faster without merging, but many small segments will be left in the image.
 */
 CV_EXPORTS_W cv::Ptr<ScanSegment> createScanSegment(int image_width, int image_height, int num_superpixels, int slices = 8, bool merge_small = true);
 
+//! @}
 }}  // namespace
 #endif
