@@ -68,6 +68,7 @@ public:
     CV_WRAP virtual void getGradientImage(OutputArray dst) = 0;
 
     CV_WRAP virtual std::vector<std::vector<Point> > getSegments() = 0;
+    CV_WRAP virtual std::vector<int> getSegmentIndicesOfLines() = 0;
 
     /** @brief Detects lines.
 
