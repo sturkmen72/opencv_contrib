@@ -48,15 +48,7 @@ namespace cv
 class ThinPlateSplineShapeTransformerImpl CV_FINAL : public ThinPlateSplineShapeTransformer
 {
 public:
-    /* Constructors */
-    ThinPlateSplineShapeTransformerImpl()
-    {
-        regularizationParameter=0;
-        name_ = "ShapeTransformer.TPS";
-        tpsComputed=false;
-        transformCost = 0;
-    }
-
+    /* Constructor */
     ThinPlateSplineShapeTransformerImpl(double _regularizationParameter)
     {
         regularizationParameter=_regularizationParameter;
@@ -86,6 +78,7 @@ public:
         writeFormat(fs);
         fs << "name" << name_
            << "regularization" << regularizationParameter;
+           << "tpsParameters" << tpsParameters;
     }
 
     virtual void read(const FileNode& fn) CV_OVERRIDE
