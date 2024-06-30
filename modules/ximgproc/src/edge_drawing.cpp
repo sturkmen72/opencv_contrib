@@ -5933,7 +5933,7 @@ void EdgeDrawingImpl::MyRGB2LabFast()
         L[i] = (116.0 * y) - 16;
         a[i] = 500 * (x / y);
         b[i] = 200 * (y - z);
-    } //end-for
+    }
 
     // Scale L to [0-255]
     double min = 1e10;
@@ -5941,7 +5941,7 @@ void EdgeDrawingImpl::MyRGB2LabFast()
     for (int i = 0; i < width * height; i++) {
         if (L[i] < min) min = L[i];
         else if (L[i] > max) max = L[i];
-    } //end-for
+    }
 
     double scale = 255.0 / (max - min);
     for (int i = 0; i < width * height; i++) { L_Img[i] = (unsigned char)((L[i] - min) * scale); }
@@ -5952,7 +5952,7 @@ void EdgeDrawingImpl::MyRGB2LabFast()
     for (int i = 0; i < width * height; i++) {
         if (a[i] < min) min = a[i];
         else if (a[i] > max) max = a[i];
-    } //end-for
+    }
 
     scale = 255.0 / (max - min);
     for (int i = 0; i < width * height; i++) { a_Img[i] = (unsigned char)((a[i] - min) * scale); }
@@ -5963,7 +5963,7 @@ void EdgeDrawingImpl::MyRGB2LabFast()
     for (int i = 0; i < width * height; i++) {
         if (b[i] < min) min = b[i];
         else if (b[i] > max) max = b[i];
-    } //end-for
+    }
 
     scale = 255.0 / (max - min);
     for (int i = 0; i < width * height; i++) { b_Img[i] = (unsigned char)((b[i] - min) * scale); }
@@ -6127,8 +6127,8 @@ void EdgeDrawingImpl::validateEdgeSegments()
 
             gradImg[i * width + j] = grad;
             grads[grad]++;
-        } //end-for
-    } //end-for
+        }
+    }
 
     Mat gradImage = Mat(height, width, CV_16SC1, gradImg);
 
@@ -6147,12 +6147,12 @@ void EdgeDrawingImpl::validateEdgeSegments()
     for (int i = 0; i < segments.size(); i++) {
         int len = (int)segments[i].size();
         np += (len * (len - 1)) / 2;
-    } //end-for
+    }
 
     // Validate segments
     for (int i = 0; i < segments.size(); i++) {
         testSegment(i, 0, (int)segments[i].size() - 1);
-    } //end-for
+    }
 
     // clear space
     delete[] grads;
@@ -6179,7 +6179,7 @@ void EdgeDrawingImpl::testSegment(int i, int index1, int index2)
         int r = segments[i][k].y;
         int c = segments[i][k].x;
         if (gradImg[r * width + c] < minGrad) { minGrad = gradImg[r * width + c]; minGradIndex = k; }
-    } //end-for
+    }
 
       // Compute nfa
     double nfa = NFA(dH[minGrad], (int)(chainLen / divForTestSegment));
@@ -6190,7 +6190,7 @@ void EdgeDrawingImpl::testSegment(int i, int index1, int index2)
             int c = segments[i][k].x;
 
             edgeImg[r * width + c] = 255;
-        } //end-for
+        }
 
         return;
     } //end-if  
@@ -6261,7 +6261,7 @@ void EdgeDrawingImpl::extractNewSegments()
 
             start = end + 1;
         } //end-while
-    } //end-for
+    }
 
     // Update
     segments = validSegments;
@@ -6357,7 +6357,7 @@ void EdgeDrawingImpl::InitColorEDLib()
 
         if (d >= 0.04045) LUT1[i] = pow(((d + 0.055) / 1.055), 2.4);
         else              LUT1[i] = d / 12.92;
-    } //end-for
+    }
 
     inc = 1.0 / LUT_SIZE;
     for (int i = 0; i <= LUT_SIZE; i++) {
@@ -6365,7 +6365,7 @@ void EdgeDrawingImpl::InitColorEDLib()
 
         if (d > 0.008856) LUT2[i] = pow(d, 1.0 / 3.0);
         else              LUT2[i] = (7.787 * d) + (16.0 / 116.0);
-    } //end-for
+    }
 
     LUT_Initialized = true;
 }
