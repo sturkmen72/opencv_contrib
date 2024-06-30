@@ -3917,7 +3917,7 @@ void EdgeDrawingImpl::JoinArcs1()
                             EX = arcs[CandidateArcNo].sx;
                             EY = arcs[CandidateArcNo].sy;
                             break;
-                        } //end-switch
+                        }
 
                         break; // Do not look at the other candidates
                     }
@@ -6193,7 +6193,7 @@ void EdgeDrawingImpl::testSegment(int i, int index1, int index2)
         }
 
         return;
-    } //end-if  
+    }
 
     // Split into two halves. We divide at the point where the gradient is the minimum
     int end = minGradIndex - 1;
@@ -6203,7 +6203,7 @@ void EdgeDrawingImpl::testSegment(int i, int index1, int index2)
 
         if (gradImg[r * width + c] <= minGrad) end--;
         else break;
-    } //end-while
+    }
 
     int start = minGradIndex + 1;
     while (start < index2) {
@@ -6212,7 +6212,7 @@ void EdgeDrawingImpl::testSegment(int i, int index1, int index2)
 
         if (gradImg[r * width + c] <= minGrad) start++;
         else break;
-    } //end-while
+    }
 
     testSegment(i, index1, end);
     testSegment(i, start, index2);
@@ -6237,7 +6237,7 @@ void EdgeDrawingImpl::extractNewSegments()
 
                 if (edgeImg[r * width + c]) break;
                 start++;
-            } //end-while
+            }
 
             int end = start + 1;
             while (end < segments[i].size()) {
@@ -6246,7 +6246,7 @@ void EdgeDrawingImpl::extractNewSegments()
 
                 if (edgeImg[r * width + c] == 0) break;
                 end++;
-            } //end-while
+            }
 
             int len = end - start;
             if (len >= 10) {
@@ -6257,10 +6257,10 @@ void EdgeDrawingImpl::extractNewSegments()
                 vector<Point> subVec(&segments[i][start], &segments[i][end - 1]);
                 validSegments[noSegments] = subVec;
                 noSegments++;
-            } //end-else
+            }
 
             start = end + 1;
-        } //end-while
+        }
     }
 
     // Update
@@ -6305,7 +6305,7 @@ void EdgeDrawingImpl::fixEdgeSegments(std::vector<std::vector<cv::Point>> map, i
             if (r2 == r - 2 && c2 == c) {
                 if (c1 != c) {
                     map[i][n1].x = c;
-                } //end-if
+                }
 
                 cp = n2;
                 n2 += 2;
@@ -6314,7 +6314,7 @@ void EdgeDrawingImpl::fixEdgeSegments(std::vector<std::vector<cv::Point>> map, i
             else if (r2 == r + 2 && c2 == c) {
                 if (c1 != c) {
                     map[i][n1].x = c;
-                } //end-if
+                }
 
                 cp = n2;
                 n2 += 2;
@@ -6323,7 +6323,7 @@ void EdgeDrawingImpl::fixEdgeSegments(std::vector<std::vector<cv::Point>> map, i
             else if (r2 == r && c2 == c - 2) {
                 if (r1 != r) {
                     map[i][n1].y = r;
-                } //end-if
+                }
 
                 cp = n2;
                 n2 += 2;
@@ -6332,7 +6332,7 @@ void EdgeDrawingImpl::fixEdgeSegments(std::vector<std::vector<cv::Point>> map, i
             else if (r2 == r && c2 == c + 2) {
                 if (r1 != r) {
                     map[i][n1].y = r;
-                } //end-if
+                }
 
                 cp = n2;
                 n2 += 2;
@@ -6341,9 +6341,9 @@ void EdgeDrawingImpl::fixEdgeSegments(std::vector<std::vector<cv::Point>> map, i
             else {
                 cp++;
                 n2++;
-            } //end-else
-        } //end-while
-    } // end-for
+            }
+        }
+    }
 }
 
 void EdgeDrawingImpl::InitColorEDLib()
