@@ -495,7 +495,66 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
         smoothChannel(b_Img, smooth_b, params.Sigma);
 
         ComputeGradientMapByDiZenzo();        // Compute Gradient & Edge Direction Maps
+
+        // Compute anchors with the user supplied parameters
+        anchorThresh = 0; // anchorThresh used as zero while computing anchor points if selectStableAnchors set. 
+        // Finding higher number of anchors is OK, because we have following validation steps in selectStableAnchors.
         ComputeAnchorPoints();                // COMPUTE ANCHORS
+        anchorThresh = params.AnchorThresholdValue; // set it to its initial argument value for further anchor validation.
+        anchorPoints.clear(); // considering validation step below, it should constructed again.
+
+        for (int i = 1; i < height - 1; i++) {
+            for (int j = 1; j < width - 1; j++) {
+                if (edgeImg[i * width + j] != ANCHOR_PIXEL) continue;
+
+                // Take only "stable" anchors
+                // 0 degree edge
+                if (edgeImg[i * width + j - 1] && edgeImg[i * width + j + 1]) {
+                    int diff1 = gradImg[i * width + j] - gradImg[(i - 1) * width + j];
+                    int diff2 = gradImg[i * width + j] - gradImg[(i + 1) * width + j];
+                    if (diff1 >= anchorThresh && diff2 >= anchorThresh) edgeImg[i * width + j] = 255;
+
+                    continue;
+                }
+
+                  // 90 degree edge
+                if (edgeImg[(i - 1) * width + j] && edgeImg[(i + 1) * width + j]) {
+                    int diff1 = gradImg[i * width + j] - gradImg[i * width + j - 1];
+                    int diff2 = gradImg[i * width + j] - gradImg[i * width + j + 1];
+                    if (diff1 >= anchorThresh && diff2 >= anchorThresh) edgeImg[i * width + j] = 255;
+
+                    continue;
+                }
+
+                  // 135 degree diagonal
+                if (edgeImg[(i - 1) * width + j - 1] && edgeImg[(i + 1) * width + j + 1]) {
+                    int diff1 = gradImg[i * width + j] - gradImg[(i - 1) * width + j + 1];
+                    int diff2 = gradImg[i * width + j] - gradImg[(i + 1) * width + j - 1];
+                    if (diff1 >= anchorThresh && diff2 >= anchorThresh) edgeImg[i * width + j] = 255;
+                    continue;
+                }
+
+                  // 45 degree diagonal
+                if (edgeImg[(i - 1) * width + j + 1] && edgeImg[(i + 1) * width + j - 1]) {
+                    int diff1 = gradImg[i * width + j] - gradImg[(i - 1) * width + j - 1];
+                    int diff2 = gradImg[i * width + j] - gradImg[(i + 1) * width + j + 1];
+                    if (diff1 >= anchorThresh && diff2 >= anchorThresh) edgeImg[i * width + j] = 255;
+                }
+            }
+        }
+
+        for (int i = 0; i < width * height; i++)
+            if (edgeImg[i] == ANCHOR_PIXEL)
+                edgeImg[i] = 0;
+            else if (edgeImg[i] == 255) {
+                edgeImg[i] = ANCHOR_PIXEL;
+                int y = i / width;
+                int x = i % width;
+                anchorPoints.push_back(Point(x, y)); // push validated anchor point to vector
+            }
+
+        anchorNos = (int)anchorPoints.size(); // get # of anchor pixels
+
         JoinAnchorPointsUsingSortedAnchors(); // JOIN ANCHORS
 
         // Fix 1 pixel errors in the edge map
