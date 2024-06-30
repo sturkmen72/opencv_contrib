@@ -1457,7 +1457,7 @@ void EdgeDrawingImpl::detectLines(OutputArray _lines)
 
     JoinCollinearLines();
 
-    if (params.NFAValidation)
+    if (params.NFAValidation && srcImage.channels() < 3)
         ValidateLineSegments();
 
     // Delete redundant space from lines
