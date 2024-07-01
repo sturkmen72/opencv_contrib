@@ -564,10 +564,6 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
         delete[] L_Img;
         delete[] a_Img;
         delete[] b_Img;
-
-        delete[] smooth_L;
-        delete[] smooth_a;
-        delete[] smooth_b;
     }
 }
 
@@ -3436,12 +3432,24 @@ void EdgeDrawingImpl::ValidateCircles(bool validate)
                            // This produces less false positives, but occationally misses on some valid circles
             }
         out:
-            // compute gx & gy
-            int com1 = smoothImg[(r + 1) * width + c + 1] - smoothImg[(r - 1) * width + c - 1];
-            int com2 = smoothImg[(r - 1) * width + c + 1] - smoothImg[(r + 1) * width + c - 1];
+            int com1, com2, gx, gy;
+            if (srcImage.channels() > 1)
+            {
+                com1 = smooth_L[(r + 1) * width + c + 1] - smooth_L[(r - 1) * width + c - 1];
+                com2 = smooth_L[(r - 1) * width + c + 1] - smooth_L[(r + 1) * width + c - 1];
 
-            int gx = com1 + com2 + smoothImg[r * width + c + 1] - smoothImg[r * width + c - 1];
-            int gy = com1 - com2 + smoothImg[(r + 1) * width + c] - smoothImg[(r - 1) * width + c];
+                gx = com1 + com2 + smooth_L[r * width + c + 1] - smooth_L[r * width + c - 1];
+                gy = com1 - com2 + smooth_L[(r + 1) * width + c] - smooth_L[(r - 1) * width + c];
+            }
+            else
+            {
+                com1 = smoothImg[(r + 1) * width + c + 1] - smoothImg[(r - 1) * width + c - 1];
+                com2 = smoothImg[(r - 1) * width + c + 1] - smoothImg[(r + 1) * width + c - 1];
+
+                gx = com1 + com2 + smoothImg[r * width + c + 1] - smoothImg[r * width + c - 1];
+                gy = com1 - com2 + smoothImg[(r + 1) * width + c] - smoothImg[(r - 1) * width + c];
+            }
+
             double pixelAngle = nfa->myAtan2((double)gx, (double)-gy);
 
             double derivX, derivY;
