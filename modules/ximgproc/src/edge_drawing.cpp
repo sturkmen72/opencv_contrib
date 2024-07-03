@@ -545,11 +545,6 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
 
         // Fix 1 pixel errors in the edge map
         fixEdgeSegments(segments);
-
-        // clean space
-        delete[] L_Img;
-        delete[] a_Img;
-        delete[] b_Img;
     }
 }
 
