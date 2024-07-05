@@ -1346,33 +1346,22 @@ int* EdgeDrawingImpl::sortAnchorsByGradValue1()
     return A;
 }
 
-int EdgeDrawingImpl::LongestChain(Chain* chains, int root)
-{
-    if (root == -1 || chains[root].len == 0)
+int EdgeDrawingImpl::LongestChain(Chain* chains, int root) {
+    if (root == -1 || chains[root].len == 0) {
         return 0;
-
-    int len0 = 0;
-    if (chains[root].children[0] != -1)
-        len0 = LongestChain(chains, chains[root].children[0]);
-
-    int len1 = 0;
-    if (chains[root].children[1] != -1)
-        len1 = LongestChain(chains, chains[root].children[1]);
-
-    int max = 0;
-
-    if (len0 >= len1)
-    {
-        max = len0;
-        chains[root].children[1] = -1;
-    }
-    else
-    {
-        max = len1;
-        chains[root].children[0] = -1;
     }
 
-    return chains[root].len + max;
+    int leftLength = LongestChain(chains, chains[root].children[0]);
+    int rightLength = LongestChain(chains, chains[root].children[1]);
+
+    if (leftLength >= rightLength) {
+        chains[root].children[1] = -1;  // Invalidate the right child
+        return chains[root].len + leftLength;
+    }
+    else {
+        chains[root].children[0] = -1;  // Invalidate the left child
+        return chains[root].len + rightLength;
+    }
 }
 
 int EdgeDrawingImpl::RetrieveChainNos(Chain* chains, int root, int chainNos[])
