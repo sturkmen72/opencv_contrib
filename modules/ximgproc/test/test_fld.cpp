@@ -307,10 +307,8 @@ TEST_F(ximgproc_ED, ManySmallCirclesColor)
 
     vector<Vec6d> ellipses;
     detector->detectEdges(test_image);
-    printf("detectEdges");
-    //detector->detectEllipses(ellipses);
+    detector->detectEllipses(ellipses);
     detector->detectLines(lines);
-    printf("detectLines");
     detector->detectEllipses(ellipses);
     size_t segments_size = 6230;
     size_t lines_size = 13715;
@@ -318,6 +316,6 @@ TEST_F(ximgproc_ED, ManySmallCirclesColor)
     EXPECT_EQ(detector->getSegments().size(), segments_size);
     EXPECT_GE(lines.size(), lines_size);
     EXPECT_LE(lines.size(), lines_size + 2);
-    //EXPECT_EQ(ellipses.size(), ellipses_size);
+    EXPECT_EQ(ellipses.size(), ellipses_size);
 }
 }} // namespace
