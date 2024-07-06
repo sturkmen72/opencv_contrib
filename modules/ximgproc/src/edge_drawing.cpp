@@ -1364,19 +1364,14 @@ int EdgeDrawingImpl::LongestChain(Chain* chains, int root) {
     }
 }
 
-int EdgeDrawingImpl::RetrieveChainNos(Chain* chains, int root, int chainNos[])
-{
+int EdgeDrawingImpl::RetrieveChainNos(Chain* chains, int root, int chainNos[]) {
     int count = 0;
 
-    while (root != -1)
-    {
-        chainNos[count] = root;
-        count++;
+    while (root != -1) {
+        chainNos[count++] = root;
 
-        if (chains[root].children[0] != -1)
-            root = chains[root].children[0];
-        else
-            root = chains[root].children[1];
+        // Move to the next child in the chain
+        root = (chains[root].children[0] != -1) ? chains[root].children[0] : chains[root].children[1];
     }
 
     return count;
