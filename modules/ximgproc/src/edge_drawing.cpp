@@ -1303,17 +1303,13 @@ StartOfWhile:
     delete[] pixels;
 }
 
-int* EdgeDrawingImpl::sortAnchorsByGradValue1()
-{
-    int SIZE = 128 * 256;
-    int* C = new int[SIZE];
-    memset(C, 0, sizeof(int) * SIZE);
+int* EdgeDrawingImpl::sortAnchorsByGradValue1() {
+    const int SIZE = 128 * 256;
+    std::vector<int> C(SIZE, 0);
 
     // Count the number of grad values
-    for (int i = 1; i < height - 1; i++)
-    {
-        for (int j = 1; j < width - 1; j++)
-        {
+    for (int i = 1; i < height - 1; i++) {
+        for (int j = 1; j < width - 1; j++) {
             if (edgeImg[i * width + j] != ANCHOR_PIXEL)
                 continue;
 
@@ -1323,16 +1319,15 @@ int* EdgeDrawingImpl::sortAnchorsByGradValue1()
     }
 
     // Compute indices
-    for (int i = 1; i < SIZE; i++)
+    for (int i = 1; i < SIZE; i++) {
         C[i] += C[i - 1];
+    }
 
     int noAnchors = C[SIZE - 1];
     int* A = new int[noAnchors];
 
-    for (int i = 1; i < height - 1; i++)
-    {
-        for (int j = 1; j < width - 1; j++)
-        {
+    for (int i = 1; i < height - 1; i++) {
+        for (int j = 1; j < width - 1; j++) {
             if (edgeImg[i * width + j] != ANCHOR_PIXEL)
                 continue;
 
@@ -1342,7 +1337,6 @@ int* EdgeDrawingImpl::sortAnchorsByGradValue1()
         }
     }
 
-    delete[] C;
     return A;
 }
 
