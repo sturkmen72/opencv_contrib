@@ -489,45 +489,61 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
         anchorThresh = params.AnchorThresholdValue; // set it to its initial argument value for further anchor validation.
         anchorPoints.clear(); // considering validation step below, it should constructed again.
 
-        for (int i = 1; i < height - 1; i++) {
-            for (int j = 1; j < width - 1; j++) {
-                if (edgeImg[i * width + j] != ANCHOR_PIXEL) continue;
+for (int i = 1; i < height - 1; i++)
+        {
+            for (int j = 1; j < width - 1; j++)
+            {
+                int index = i * width + j;
+                if (edgeImg[index] != ANCHOR_PIXEL) continue;
 
                 // Take only "stable" anchors
                 // 0 degree edge
-                if (edgeImg[i * width + j - 1] && edgeImg[i * width + j + 1]) {
-                    int diff1 = gradImg[i * width + j] - gradImg[(i - 1) * width + j];
-                    int diff2 = gradImg[i * width + j] - gradImg[(i + 1) * width + j];
-                    if (diff1 >= anchorThresh && diff2 >= anchorThresh) edgeImg[i * width + j] = 255;
-
+                if (edgeImg[index - 1] && edgeImg[index + 1])
+                {
+                    int diff1 = gradImg[index] - gradImg[(i - 1) * width + j];
+                    int diff2 = gradImg[index] - gradImg[(i + 1) * width + j];
+                    if (diff1 >= anchorThresh && diff2 >= anchorThresh)
+                    {
+                        edgeImg[index] = 255; // Assuming 255 is the value to mark stable anchors
+                    }
                     continue;
                 }
 
-                  // 90 degree edge
-                if (edgeImg[(i - 1) * width + j] && edgeImg[(i + 1) * width + j]) {
-                    int diff1 = gradImg[i * width + j] - gradImg[i * width + j - 1];
-                    int diff2 = gradImg[i * width + j] - gradImg[i * width + j + 1];
-                    if (diff1 >= anchorThresh && diff2 >= anchorThresh) edgeImg[i * width + j] = 255;
-
+                // 90 degree edge
+                if (edgeImg[(i - 1) * width + j] && edgeImg[(i + 1) * width + j])
+                {
+                    int diff1 = gradImg[index] - gradImg[index - 1];
+                    int diff2 = gradImg[index] - gradImg[index + 1];
+                    if (diff1 >= anchorThresh && diff2 >= anchorThresh)
+                    {
+                        edgeImg[index] = 255;
+                    }
                     continue;
                 }
 
-                  // 135 degree diagonal
-                if (edgeImg[(i - 1) * width + j - 1] && edgeImg[(i + 1) * width + j + 1]) {
-                    int diff1 = gradImg[i * width + j] - gradImg[(i - 1) * width + j + 1];
-                    int diff2 = gradImg[i * width + j] - gradImg[(i + 1) * width + j - 1];
-                    if (diff1 >= anchorThresh && diff2 >= anchorThresh) edgeImg[i * width + j] = 255;
+                // 135 degree diagonal
+                if (edgeImg[(i - 1) * width + j - 1] && edgeImg[(i + 1) * width + j + 1])
+                {
+                    int diff1 = gradImg[index] - gradImg[(i - 1) * width + j + 1];
+                    int diff2 = gradImg[index] - gradImg[(i + 1) * width + j - 1];
+                    if (diff1 >= anchorThresh && diff2 >= anchorThresh)
+                    {
+                        edgeImg[index] = 255;
+                    }
                     continue;
                 }
 
-                  // 45 degree diagonal
-                if (edgeImg[(i - 1) * width + j + 1] && edgeImg[(i + 1) * width + j - 1]) {
-                    int diff1 = gradImg[i * width + j] - gradImg[(i - 1) * width + j - 1];
-                    int diff2 = gradImg[i * width + j] - gradImg[(i + 1) * width + j + 1];
-                    if (diff1 >= anchorThresh && diff2 >= anchorThresh) edgeImg[i * width + j] = 255;
+                // 45 degree diagonal
+                if (edgeImg[(i - 1) * width + j + 1] && edgeImg[(i + 1) * width + j - 1])
+                {
+                    int diff1 = gradImg[index] - gradImg[(i - 1) * width + j - 1];
+                    int diff2 = gradImg[index] - gradImg[(i + 1) * width + j + 1];
+                    if (diff1 >= anchorThresh && diff2 >= anchorThresh)
+                    {
+                        edgeImg[index] = 255;
+                    }
                 }
             }
-        }
 
         for (int i = 0; i < width * height; i++)
             if (edgeImg[i] == ANCHOR_PIXEL)
@@ -607,37 +623,39 @@ void EdgeDrawingImpl::ComputeAnchorPoints()
             inc = params.ScanInterval;
         }
 
+        int rowIndex = i * width;
         for (int j = start; j < width - 2; j += inc)
         {
-            if (gradImg[i * width + j] < gradThresh)
+            int index = rowIndex + j;
+            if (gradImg[index] < gradThresh)
                 continue;
 
-            if (dirImg[i * width + j] == EDGE_VERTICAL)
+            if (dirImg[index] == EDGE_VERTICAL)
             {
-                // vertical edge
-                int diff1 = gradImg[i * width + j] - gradImg[i * width + j - 1];
-                int diff2 = gradImg[i * width + j] - gradImg[i * width + j + 1];
+                // Vertical edge
+                int diff1 = gradImg[index] - gradImg[index - 1];
+                int diff2 = gradImg[index] - gradImg[index + 1];
                 if (diff1 >= anchorThresh && diff2 >= anchorThresh)
                 {
-                    edgeImg[i * width + j] = ANCHOR_PIXEL;
+                    edgeImg[index] = ANCHOR_PIXEL;
                     anchorPoints.push_back(Point(j, i));
                 }
             }
             else
             {
-                // horizontal edge
-                int diff1 = gradImg[i * width + j] - gradImg[(i - 1) * width + j];
-                int diff2 = gradImg[i * width + j] - gradImg[(i + 1) * width + j];
+                // Horizontal edge
+                int diff1 = gradImg[index] - gradImg[(i - 1) * width + j];
+                int diff2 = gradImg[index] - gradImg[(i + 1) * width + j];
                 if (diff1 >= anchorThresh && diff2 >= anchorThresh)
                 {
-                    edgeImg[i * width + j] = ANCHOR_PIXEL;
+                    edgeImg[index] = ANCHOR_PIXEL;
                     anchorPoints.push_back(Point(j, i));
                 }
             }
         }
     }
 
-    anchorNos = (int)anchorPoints.size(); // get the total number of anchor points
+    anchorNos = static_cast<int>(anchorPoints.size()); // Get the total number of anchor points
 }
 
 void EdgeDrawingImpl::JoinAnchorPointsUsingSortedAnchors()
