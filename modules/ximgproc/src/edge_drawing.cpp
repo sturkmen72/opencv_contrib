@@ -527,6 +527,445 @@ void EdgeDrawingImpl::ComputeAnchorPoints()
 void EdgeDrawingImpl::JoinAnchorPointsUsingSortedAnchors()
 {
     int* chainNos = new int[(width + height) * 8];
+    Point* pixels = new Point[width * height];
+    StackNode* stack = new StackNode[width * height];
+    Chain* chains = new Chain[width * height];
+
+    int* pAnchors = sortAnchorsByGradValue1();
+
+    for (int k0 = anchorNos - 1; k0 >= 0; k0--)
+    {
+        int pixelOffset = pAnchors[k0];
+        int i = pixelOffset / width;
+        int j = pixelOffset % width;
+
+        if (edgeImg[i * width + j] != ANCHOR_PIXEL)
+            continue;
+
+        chains[0].len = 0;
+        chains[0].parent = -1;
+        chains[0].dir = 0;
+        chains[0].children[0] = chains[0].children[1] = -1;
+        chains[0].pixels = NULL;
+
+        int noChains = 1;
+        int len = 0;
+        int duplicatePixelCount = 0;
+        int top = -1;
+
+        if (dirImg[i * width + j] == EDGE_VERTICAL)
+        {
+            stack[++top].r = i;
+            stack[top].c = j;
+            stack[top].dir = ED_DOWN;
+            stack[top].parent = 0;
+
+            stack[++top].r = i;
+            stack[top].c = j;
+            stack[top].dir = ED_UP;
+            stack[top].parent = 0;
+        }
+        else
+        {
+            stack[++top].r = i;
+            stack[top].c = j;
+            stack[top].dir = ED_RIGHT;
+            stack[top].parent = 0;
+
+            stack[++top].r = i;
+            stack[top].c = j;
+            stack[top].dir = ED_LEFT;
+            stack[top].parent = 0;
+        }
+
+        while (top >= 0)
+        {
+            int r = stack[top].r;
+            int c = stack[top].c;
+            int dir = stack[top].dir;
+            int parent = stack[top].parent;
+            top--;
+
+            if (edgeImg[r * width + c] != EDGE_PIXEL)
+                duplicatePixelCount++;
+
+            chains[noChains].dir = dir;
+            chains[noChains].parent = parent;
+            chains[noChains].children[0] = chains[noChains].children[1] = -1;
+
+            int chainLen = 0;
+            chains[noChains].pixels = &pixels[len];
+
+            pixels[len].y = r;
+            pixels[len].x = c;
+            len++;
+            chainLen++;
+
+            if (dir == ED_LEFT)
+            {
+                while (dirImg[r * width + c] == EDGE_HORIZONTAL)
+                {
+                    edgeImg[r * width + c] = EDGE_PIXEL;
+
+                    if (edgeImg[(r - 1) * width + c] == ANCHOR_PIXEL)
+                        edgeImg[(r - 1) * width + c] = 0;
+                    if (edgeImg[(r + 1) * width + c] == ANCHOR_PIXEL)
+                        edgeImg[(r + 1) * width + c] = 0;
+
+                    if (edgeImg[r * width + c - 1] >= ANCHOR_PIXEL)
+                    {
+                        c--;
+                    }
+                    else if (edgeImg[(r - 1) * width + c - 1] >= ANCHOR_PIXEL)
+                    {
+                        r--;
+                        c--;
+                    }
+                    else if (edgeImg[(r + 1) * width + c - 1] >= ANCHOR_PIXEL)
+                    {
+                        r++;
+                        c--;
+                    }
+                    else
+                    {
+                        int A = gradImg[(r - 1) * width + c - 1];
+                        int B = gradImg[r * width + c - 1];
+                        int C = gradImg[(r + 1) * width + c - 1];
+
+                        if (A > B)
+                        {
+                            if (A > C)
+                                r--;
+                            else
+                                r++;
+                        }
+                        else if (C > B)
+                            r++;
+                        c--;
+                    }
+
+                    if (edgeImg[r * width + c] == EDGE_PIXEL || gradImg[r * width + c] < gradThresh)
+                    {
+                        if (chainLen > 0)
+                        {
+                            chains[noChains].len = chainLen;
+                            chains[parent].children[0] = noChains;
+                            noChains++;
+                        }
+                        break;
+                    }
+
+                    pixels[len].y = r;
+                    pixels[len].x = c;
+                    len++;
+                    chainLen++;
+                }
+
+                stack[++top].r = r;
+                stack[top].c = c;
+                stack[top].dir = ED_DOWN;
+                stack[top].parent = noChains;
+
+                stack[++top].r = r;
+                stack[top].c = c;
+                stack[top].dir = ED_UP;
+                stack[top].parent = noChains;
+
+                len--;
+                chainLen--;
+
+                chains[noChains].len = chainLen;
+                chains[parent].children[0] = noChains;
+                noChains++;
+            }
+            else if (dir == ED_RIGHT)
+            {
+                while (dirImg[r * width + c] == EDGE_HORIZONTAL)
+                {
+                    edgeImg[r * width + c] = EDGE_PIXEL;
+
+                    if (edgeImg[(r + 1) * width + c] == ANCHOR_PIXEL)
+                        edgeImg[(r + 1) * width + c] = 0;
+                    if (edgeImg[(r - 1) * width + c] == ANCHOR_PIXEL)
+                        edgeImg[(r - 1) * width + c] = 0;
+
+                    if (edgeImg[r * width + c + 1] >= ANCHOR_PIXEL)
+                    {
+                        c++;
+                    }
+                    else if (edgeImg[(r + 1) * width + c + 1] >= ANCHOR_PIXEL)
+                    {
+                        r++;
+                        c++;
+                    }
+                    else if (edgeImg[(r - 1) * width + c + 1] >= ANCHOR_PIXEL)
+                    {
+                        r--;
+                        c++;
+                    }
+                    else
+                    {
+                        int A = gradImg[(r - 1) * width + c + 1];
+                        int B = gradImg[r * width + c + 1];
+                        int C = gradImg[(r + 1) * width + c + 1];
+
+                        if (A > B)
+                        {
+                            if (A > C)
+                                r--;
+                            else
+                                r++;
+                        }
+                        else if (C > B)
+                            r++;
+                        c++;
+                    }
+
+                    if (edgeImg[r * width + c] == EDGE_PIXEL || gradImg[r * width + c] < gradThresh)
+                    {
+                        if (chainLen > 0)
+                        {
+                            chains[noChains].len = chainLen;
+                            chains[parent].children[1] = noChains;
+                            noChains++;
+                        }
+                        break;
+                    }
+
+                    pixels[len].y = r;
+                    pixels[len].x = c;
+                    len++;
+                    chainLen++;
+                }
+
+                stack[++top].r = r;
+                stack[top].c = c;
+                stack[top].dir = ED_DOWN;
+                stack[top].parent = noChains;
+
+                stack[++top].r = r;
+                stack[top].c = c;
+                stack[top].dir = ED_UP;
+                stack[top].parent = noChains;
+
+                len--;
+                chainLen--;
+
+                chains[noChains].len = chainLen;
+                chains[parent].children[1] = noChains;
+                noChains++;
+            }
+            else if (dir == ED_UP)
+            {
+                while (dirImg[r * width + c] == EDGE_VERTICAL)
+                {
+                    edgeImg[r * width + c] = EDGE_PIXEL;
+
+                    if (edgeImg[r * width + c - 1] == ANCHOR_PIXEL)
+                        edgeImg[r * width + c - 1] = 0;
+                    if (edgeImg[r * width + c + 1] == ANCHOR_PIXEL)
+                        edgeImg[r * width + c + 1] = 0;
+
+                    if (edgeImg[(r - 1) * width + c] >= ANCHOR_PIXEL)
+                    {
+                        r--;
+                    }
+                    else if (edgeImg[(r - 1) * width + c - 1] >= ANCHOR_PIXEL)
+                    {
+                        r--;
+                        c--;
+                    }
+                    else if (edgeImg[(r - 1) * width + c + 1] >= ANCHOR_PIXEL)
+                    {
+                        r--;
+                        c++;
+                    }
+                    else
+                    {
+                        int A = gradImg[(r - 1) * width + c - 1];
+                        int B = gradImg[(r - 1) * width + c];
+                        int C = gradImg[(r - 1) * width + c + 1];
+
+                        if (A > B)
+                        {
+                            if (A > C)
+                                c--;
+                            else
+                                c++;
+                        }
+                        else if (C > B)
+                            c++;
+                        r--;
+                    }
+
+                    if (edgeImg[r * width + c] == EDGE_PIXEL || gradImg[r * width + c] < gradThresh)
+                    {
+                        if (chainLen > 0)
+                        {
+                            chains[noChains].len = chainLen;
+                            chains[parent].children[0] = noChains;
+                            noChains++;
+                        }
+                        break;
+                    }
+
+                    pixels[len].y = r;
+                    pixels[len].x = c;
+                    len++;
+                    chainLen++;
+                }
+
+                stack[++top].r = r;
+                stack[top].c = c;
+                stack[top].dir = ED_LEFT;
+                stack[top].parent = noChains;
+
+                stack[++top].r = r;
+                stack[top].c = c;
+                stack[top].dir = ED_RIGHT;
+                stack[top].parent = noChains;
+
+                len--;
+                chainLen--;
+
+                chains[noChains].len = chainLen;
+                chains[parent].children[0] = noChains;
+                noChains++;
+            }
+            else if (dir == ED_DOWN)
+            {
+                while (dirImg[r * width + c] == EDGE_VERTICAL)
+                {
+                    edgeImg[r * width + c] = EDGE_PIXEL;
+
+                    if (edgeImg[r * width + c + 1] == ANCHOR_PIXEL)
+                        edgeImg[r * width + c + 1] = 0;
+                    if (edgeImg[r * width + c - 1] == ANCHOR_PIXEL)
+                        edgeImg[r * width + c - 1] = 0;
+
+                    if (edgeImg[(r + 1) * width + c] >= ANCHOR_PIXEL)
+                    {
+                        r++;
+                    }
+                    else if (edgeImg[(r + 1) * width + c + 1] >= ANCHOR_PIXEL)
+                    {
+                        r++;
+                        c++;
+                    }
+                    else if (edgeImg[(r + 1) * width + c - 1] >= ANCHOR_PIXEL)
+                    {
+                        r++;
+                        c--;
+                    }
+                    else
+                    {
+                        int A = gradImg[(r + 1) * width + c - 1];
+                        int B = gradImg[(r + 1) * width + c];
+                        int C = gradImg[(r + 1) * width + c + 1];
+
+                        if (A > B)
+                        {
+                            if (A > C)
+                                c--;
+                            else
+                                c++;
+                        }
+                        else if (C > B)
+                            c++;
+                        r++;
+                    }
+
+                    if (edgeImg[r * width + c] == EDGE_PIXEL || gradImg[r * width + c] < gradThresh)
+                    {
+                        if (chainLen > 0)
+                        {
+                            chains[noChains].len = chainLen;
+                            chains[parent].children[1] = noChains;
+                            noChains++;
+                        }
+                        break;
+                    }
+
+                    pixels[len].y = r;
+                    pixels[len].x = c;
+                    len++;
+                    chainLen++;
+                }
+
+                stack[++top].r = r;
+                stack[top].c = c;
+                stack[top].dir = ED_LEFT;
+                stack[top].parent = noChains;
+
+                stack[++top].r = r;
+                stack[top].c = c;
+                stack[top].dir = ED_RIGHT;
+                stack[top].parent = noChains;
+
+                len--;
+                chainLen--;
+
+                chains[noChains].len = chainLen;
+                chains[parent].children[1] = noChains;
+                noChains++;
+            }
+
+            if (chainLen > 0)
+            {
+                chains[noChains].len = chainLen;
+                if (dir == ED_UP || dir == ED_DOWN)
+                    chains[parent].children[0] = noChains;
+                else
+                    chains[parent].children[1] = noChains;
+                noChains++;
+            }
+        }
+
+        if (chains[0].children[0] >= 0 || chains[0].children[1] >= 0)
+        {
+            int noChainNos = LongestChain(chains, noChains, chainNos);
+            RetrieveChainNos(chains, chainNos, noChainNos, pixels);
+
+            for (int k = 0; k < noChainNos; k++)
+            {
+                int chainNo = chainNos[k];
+                int parentNo = chains[chainNo].parent;
+                if (parentNo >= 0)
+                    chains[parentNo].children[0] = chains[parentNo].children[1] = -1;
+            }
+
+            for (int k = 0; k < noChains; k++)
+            {
+                int len = chains[k].len;
+                if (len > 0)
+                {
+                    int* segmentNosPtr = segmentNos + segments * 2;
+                    int* segmentPointsPtr = segmentPoints + segments * 2 * params.segmentPointLimit;
+
+                    for (int l = 0; l < len; l++)
+                    {
+                        segmentPointsPtr[l * 2] = chains[k].pixels[l].x;
+                        segmentPointsPtr[l * 2 + 1] = chains[k].pixels[l].y;
+                    }
+
+                    segmentNosPtr[0] = len;
+                    segmentNosPtr[1] = len;
+
+                    segments++;
+                }
+            }
+        }
+    }
+
+    delete[] chainNos;
+    delete[] pixels;
+    delete[] stack;
+    delete[] chains;
+}
+
+void JoinAnchorPointsUsingSortedAnchors()
+{
+    int* chainNos = new int[(width + height) * 8];
 
     Point* pixels = new Point[width * height];
     StackNode* stack = new StackNode[width * height];
