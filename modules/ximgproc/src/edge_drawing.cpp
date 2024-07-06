@@ -491,37 +491,39 @@ void EdgeDrawingImpl::ComputeAnchorPoints()
             inc = params.ScanInterval;
         }
 
+        int rowIndex = i * width;
         for (int j = start; j < width - 2; j += inc)
         {
-            if (gradImg[i * width + j] < gradThresh)
+            int index = rowIndex + j;
+            if (gradImg[index] < gradThresh)
                 continue;
 
-            if (dirImg[i * width + j] == EDGE_VERTICAL)
+            if (dirImg[index] == EDGE_VERTICAL)
             {
-                // vertical edge
-                int diff1 = gradImg[i * width + j] - gradImg[i * width + j - 1];
-                int diff2 = gradImg[i * width + j] - gradImg[i * width + j + 1];
+                // Vertical edge
+                int diff1 = gradImg[index] - gradImg[index - 1];
+                int diff2 = gradImg[index] - gradImg[index + 1];
                 if (diff1 >= anchorThresh && diff2 >= anchorThresh)
                 {
-                    edgeImg[i * width + j] = ANCHOR_PIXEL;
+                    edgeImg[index] = ANCHOR_PIXEL;
                     anchorPoints.push_back(Point(j, i));
                 }
             }
             else
             {
-                // horizontal edge
-                int diff1 = gradImg[i * width + j] - gradImg[(i - 1) * width + j];
-                int diff2 = gradImg[i * width + j] - gradImg[(i + 1) * width + j];
+                // Horizontal edge
+                int diff1 = gradImg[index] - gradImg[(i - 1) * width + j];
+                int diff2 = gradImg[index] - gradImg[(i + 1) * width + j];
                 if (diff1 >= anchorThresh && diff2 >= anchorThresh)
                 {
-                    edgeImg[i * width + j] = ANCHOR_PIXEL;
+                    edgeImg[index] = ANCHOR_PIXEL;
                     anchorPoints.push_back(Point(j, i));
                 }
             }
         }
     }
 
-    anchorNos = (int)anchorPoints.size(); // get the total number of anchor points
+    anchorNos = static_cast<int>(anchorPoints.size()); // Get the total number of anchor points
 }
 
 void EdgeDrawingImpl::JoinAnchorPointsUsingSortedAnchors()
