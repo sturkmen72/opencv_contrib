@@ -782,7 +782,7 @@ exit(0);
                             r++;
                         c--;
                     }
-
+if (srcImage.type() == CV_8UC3) printf("(%dx%d)\n", r, c);
                     if (edgeImg[r * width + c] == EDGE_PIXEL || gradImg[r * width + c] < gradThresh)
                     {
                         if (chainLen > 0)
