@@ -717,7 +717,7 @@ StartOfWhile:
             chains[noChains].children[0] = chains[noChains].children[1] = -1;
 
             int chainLen = 0;
-printf("noChains %d\n",noChains);
+
             chains[noChains].pixels = &pixels[len];
 
             pixels[len].y = r;
@@ -726,7 +726,7 @@ printf("noChains %d\n",noChains);
             chainLen++;
 if (srcImage.type() == CV_8UC3)
 {
-printf("729 (%d-%d)",r,c);
+printf("729 (%d-%d) %d",r,c,noChains);
 gcounter++;
 if (gcounter > 120)
 exit(0);
