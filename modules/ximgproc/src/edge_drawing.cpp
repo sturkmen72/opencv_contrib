@@ -724,7 +724,8 @@ StartOfWhile:
             pixels[len].x = c;
             len++;
             chainLen++;
-
+if (srcImage.type() == CV_8UC3)
+printf("728 ");
             if (dir == ED_LEFT)
             {
                 while (dirImg[r * width + c] == EDGE_HORIZONTAL)
@@ -813,6 +814,8 @@ StartOfWhile:
             }
             else if (dir == ED_RIGHT)
             {
+if (srcImage.type() == CV_8UC3)
+printf("818 ");
                 while (dirImg[r * width + c] == EDGE_HORIZONTAL)
                 {
                     edgeImg[r * width + c] = EDGE_PIXEL;
@@ -900,6 +903,8 @@ StartOfWhile:
             }
             else if (dir == ED_UP)
             {
+if (srcImage.type() == CV_8UC3)
+printf("907 ");
                 while (dirImg[r * width + c] == EDGE_VERTICAL)
                 {
                     edgeImg[r * width + c] = EDGE_PIXEL;
@@ -986,6 +991,8 @@ StartOfWhile:
             }
             else   // dir == DOWN
             {
+if (srcImage.type() == CV_8UC3)
+printf("995 ");
                 while (dirImg[r * width + c] == EDGE_VERTICAL)
                 {
                     edgeImg[r * width + c] = EDGE_PIXEL;
@@ -1105,7 +1112,8 @@ StartOfWhile:
                     {
                         int dr = abs(fr - segmentPoints[segmentNos][index].y);
                         int dc = abs(fc - segmentPoints[segmentNos][index].x);
-
+if (srcImage.type() == CV_8UC3)
+printf("1116 segmentPoints : %zd\n", segmentPoints.size());
                         if (dr <= 1 && dc <= 1)
                         {
                             // neighbors. Erase last pixel
@@ -1116,7 +1124,8 @@ StartOfWhile:
                         else
                             break;
                     }
-
+if (srcImage.type() == CV_8UC3)
+printf("1128 segmentPoints : %zd\n", segmentPoints.size());
                     if (chains[chainNo].len > 1 && noSegmentPixels > 0)
                     {
                         fr = chains[chainNo].pixels[chains[chainNo].len - 2].y;
@@ -1138,13 +1147,15 @@ StartOfWhile:
                     chains[chainNo].len = 0;  // Mark as copied
                 }
             }
-
+if (srcImage.type() == CV_8UC3 && segmentPoints.size()>8)
+exit(0);
             totalLen = LongestChain(chains, chains[0].children[0]);
             if (totalLen > 1)
             {
                 // Retrieve the chainNos
                 int count = RetrieveChainNos(chains, chains[0].children[0], chainNos);
-
+if (srcImage.type() == CV_8UC3)
+printf("1159 count : %zd\n", count);
                 // Copy these chains in the forward direction. Skip the first pixel of the first chain
                 // due to repetition with the last pixel of the previous chain
                 int lastChainNo = chainNos[0];
@@ -1198,7 +1209,8 @@ StartOfWhile:
                         segmentPoints[segmentNos].push_back(chains[chainNo].pixels[l]);
                         noSegmentPixels++;
                     }
-
+if (srcImage.type() == CV_8UC3)
+printf("1214 segmentPoints : %zd %d\n", segmentPoints.size(),k3);
                     chains[chainNo].len = 0;  // Mark as copied
                 }
             }
