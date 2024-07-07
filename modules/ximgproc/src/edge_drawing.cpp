@@ -717,7 +717,7 @@ StartOfWhile:
             chains[noChains].children[0] = chains[noChains].children[1] = -1;
 
             int chainLen = 0;
-
+printf("noChains %d\n",noChains);
             chains[noChains].pixels = &pixels[len];
 
             pixels[len].y = r;
@@ -726,9 +726,9 @@ StartOfWhile:
             chainLen++;
 if (srcImage.type() == CV_8UC3)
 {
-printf("729 ");
+printf("729 (%d-%d)",r,c);
 gcounter++;
-if (gcounter > 100)
+if (gcounter > 120)
 exit(0);
 }
             if (dir == ED_LEFT)
@@ -967,6 +967,8 @@ printf("912 ");
                             chains[parent].children[0] = noChains;
                             noChains++;
                         }
+if (srcImage.type() == CV_8UC3)
+printf("971-");
                         goto StartOfWhile;
                     }
 
