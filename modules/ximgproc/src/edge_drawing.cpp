@@ -726,9 +726,9 @@ StartOfWhile:
             chainLen++;
 if (srcImage.type() == CV_8UC3)
 {
-printf("729 (%d-%d) %d",r,c,noChains);
+printf("729 (%d-%d) -%d.. ",r,c,noChains);
 gcounter++;
-if (gcounter > 120)
+if (gcounter > 90)
 exit(0);
 }
             if (dir == ED_LEFT)
