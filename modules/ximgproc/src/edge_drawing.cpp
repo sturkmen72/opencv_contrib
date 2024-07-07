@@ -643,7 +643,7 @@ void EdgeDrawingImpl::ComputeAnchorPoints()
 void EdgeDrawingImpl::JoinAnchorPointsUsingSortedAnchors()
 {
     int* chainNos = new int[(width + height) * 8];
-
+    int gcounter = 0;
     Point* pixels = new Point[width * height];
     StackNode* stack = new StackNode[width * height];
     Chain* chains = new Chain[width * height];
@@ -725,7 +725,12 @@ StartOfWhile:
             len++;
             chainLen++;
 if (srcImage.type() == CV_8UC3)
-printf("728 ");
+{
+printf("729 ");
+gcounter++;
+if (gcounter > 100)
+exit(0);
+}
             if (dir == ED_LEFT)
             {
                 while (dirImg[r * width + c] == EDGE_HORIZONTAL)
@@ -815,7 +820,7 @@ printf("728 ");
             else if (dir == ED_RIGHT)
             {
 if (srcImage.type() == CV_8UC3)
-printf("818 ");
+printf("823 ");
                 while (dirImg[r * width + c] == EDGE_HORIZONTAL)
                 {
                     edgeImg[r * width + c] = EDGE_PIXEL;
@@ -904,7 +909,7 @@ printf("818 ");
             else if (dir == ED_UP)
             {
 if (srcImage.type() == CV_8UC3)
-printf("907 ");
+printf("912 ");
                 while (dirImg[r * width + c] == EDGE_VERTICAL)
                 {
                     edgeImg[r * width + c] = EDGE_PIXEL;
@@ -992,7 +997,7 @@ printf("907 ");
             else   // dir == DOWN
             {
 if (srcImage.type() == CV_8UC3)
-printf("995 ");
+printf("1000 ");
                 while (dirImg[r * width + c] == EDGE_VERTICAL)
                 {
                     edgeImg[r * width + c] = EDGE_PIXEL;
@@ -1113,7 +1118,7 @@ printf("995 ");
                         int dr = abs(fr - segmentPoints[segmentNos][index].y);
                         int dc = abs(fc - segmentPoints[segmentNos][index].x);
 if (srcImage.type() == CV_8UC3)
-printf("1116 segmentPoints : %zd\n", segmentPoints.size());
+printf("1121 segmentPoints : %zd\n", segmentPoints.size());
                         if (dr <= 1 && dc <= 1)
                         {
                             // neighbors. Erase last pixel
@@ -1125,7 +1130,7 @@ printf("1116 segmentPoints : %zd\n", segmentPoints.size());
                             break;
                     }
 if (srcImage.type() == CV_8UC3)
-printf("1128 segmentPoints : %zd\n", segmentPoints.size());
+printf("1133 segmentPoints : %zd\n", segmentPoints.size());
                     if (chains[chainNo].len > 1 && noSegmentPixels > 0)
                     {
                         fr = chains[chainNo].pixels[chains[chainNo].len - 2].y;
@@ -1147,15 +1152,13 @@ printf("1128 segmentPoints : %zd\n", segmentPoints.size());
                     chains[chainNo].len = 0;  // Mark as copied
                 }
             }
-if (srcImage.type() == CV_8UC3 && segmentPoints.size()>8)
-exit(0);
             totalLen = LongestChain(chains, chains[0].children[0]);
             if (totalLen > 1)
             {
                 // Retrieve the chainNos
                 int count = RetrieveChainNos(chains, chains[0].children[0], chainNos);
 if (srcImage.type() == CV_8UC3)
-printf("1159 count : %zd\n", count);
+printf("1161 count : %zd\n", count);
                 // Copy these chains in the forward direction. Skip the first pixel of the first chain
                 // due to repetition with the last pixel of the previous chain
                 int lastChainNo = chainNos[0];
@@ -1210,7 +1213,7 @@ printf("1159 count : %zd\n", count);
                         noSegmentPixels++;
                     }
 if (srcImage.type() == CV_8UC3)
-printf("1214 segmentPoints : %zd %d\n", segmentPoints.size(),k3);
+printf("1216 segmentPoints : %zd %d\n", segmentPoints.size(),k3);
                     chains[chainNo].len = 0;  // Mark as copied
                 }
             }
