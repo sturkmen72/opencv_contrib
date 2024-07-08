@@ -5972,6 +5972,8 @@ void EdgeDrawingImpl::MyRGB2LabFast()
 
 void EdgeDrawingImpl::ComputeGradientMapByDiZenzo()
 {
+    memset(gradImg, 0, sizeof(ushort)*width*height);
+
     int max = 0;
 
     for (int i = 1; i < height - 1; i++) {
@@ -6061,9 +6063,10 @@ void EdgeDrawingImpl::ComputeGradientMapByDiZenzo()
     double scale = 255.0 / max;
     for (int i = 0; i < width * height; i++)
     {
-       gradImg[i] = (ushort)((gradImg[i] * scale));
+        ushort old = gradImg[i];
+       gradImg[i] = (ushort)(gradImg[i] * scale);
        if (gradImg[i] > 230)
-           printf("*%d* %d\n", i, gradImg[i]);
+           printf("%d *%d* %d\n", old, i, gradImg[i]);
     }
 }
 
