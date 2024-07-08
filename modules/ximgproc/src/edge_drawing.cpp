@@ -946,7 +946,7 @@ printf("912 ");
                         int A = gradImg[(r - 1) * width + c - 1];
                         int B = gradImg[(r - 1) * width + c];
                         int C = gradImg[(r - 1) * width + c + 1];
-
+if (srcImage.type() == CV_8UC3) printf("(%dx%d):[A:%d B:%d C:%d]\n", r, c, A, B, C);
                         if (A > B)
                         {
                             if (A > C)
