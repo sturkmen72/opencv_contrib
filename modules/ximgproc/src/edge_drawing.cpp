@@ -6051,11 +6051,12 @@ void EdgeDrawingImpl::ComputeGradientMapByDiZenzo()
 
             gradImg[i * width + j] = (ushort)grad;
 
-            if (grad > max)
-                max = grad;
+            if ((ushort)grad > max)
+                max = (ushort)grad;
         }
     }
 
+    printf("---max : %d\n", max);
     // Scale the gradient values to 0-255
     double scale = 255.0 / max;
     for (int i = 0; i < width * height; i++)
