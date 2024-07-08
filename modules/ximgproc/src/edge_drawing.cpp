@@ -6059,7 +6059,12 @@ void EdgeDrawingImpl::ComputeGradientMapByDiZenzo()
     // Scale the gradient values to 0-255
     double scale = 255.0 / max;
     for (int i = 0; i < width * height; i++)
-        gradImg[i] = (ushort)(gradImg[i] * scale);
+    {
+
+       gradImg[i] = (ushort)(gradImg[i] * scale);
+       if (gradImg[i] > 230)
+           printf("*%d* %d\n", i, gradImg[i]);
+    }
 }
 
 void EdgeDrawingImpl::smoothChannel(uchar* src, uchar* smooth, double sigma)
