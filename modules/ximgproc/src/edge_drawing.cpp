@@ -6061,8 +6061,7 @@ void EdgeDrawingImpl::ComputeGradientMapByDiZenzo()
     double scale = 255.0 / max;
     for (int i = 0; i < width * height; i++)
     {
-
-       gradImg[i] = (ushort)(gradImg[i] * scale);
+       gradImg[i] = (ushort)((gradImg[i] * scale));
        if (gradImg[i] > 230)
            printf("*%d* %d\n", i, gradImg[i]);
     }
