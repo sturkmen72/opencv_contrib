@@ -355,7 +355,7 @@ void EdgeDrawingImpl::write(cv::FileStorage& fs) const
 EdgeDrawingImpl::EdgeDrawingImpl()
 {
     params = EdgeDrawing::Params();
-    nfa = new NFALUT(1, 1/2, 1, 1);
+    nfa = new NFALUT(1, 1/8, 0.5);
     dH = new double[ED_MAX_GRAD_VALUE];
     grads = new int[ED_MAX_GRAD_VALUE];
 }
@@ -1613,7 +1613,8 @@ void EdgeDrawingImpl::ValidateLineSegments()
     {
         int lutSize = (width + height) / 8;
         double prob = 1.0 / 8;  // probability of alignment
-        nfa = new NFALUT(lutSize, prob, width, height);
+        double logNT = 2.0 * (log10((double)width) + log10((double)height));
+        nfa = new NFALUT(lutSize, prob, logNT);
     }
 
     int* x = new int[(width + height) * 4];
@@ -3217,7 +3218,8 @@ void EdgeDrawingImpl::ValidateCircles(bool validate)
     {
         int lutSize = (width + height) / 8;
         double prob = 1.0 / 8;  // probability of alignment
-        nfa = new NFALUT(lutSize, prob, width, height); // create look up table
+        double logNT = 2.0 * (log10((double)width) + log10((double)height));
+        nfa = new NFALUT(lutSize, prob, logNT); // create look up table
     }
 
     // Validate circles & ellipses
