@@ -2716,7 +2716,7 @@ void EdgeDrawingImpl::detectEllipses(OutputArray ellipses)
     noCircles2 = 0;
     circles2 = new Circle[maxNoOfCircles];
     if (params.Sigma >= 1.0)
-        GaussianBlur(srcImage, smoothImage, Size(), params.Sigma); // calculate kernel from sigma;
+        GaussianBlur(srcImage, smoothImage, Size(), 0.50); // calculate kernel from sigma;
 
     ValidateCircles(params.NFAValidation);
 
